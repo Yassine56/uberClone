@@ -8,8 +8,16 @@
 
 import UIKit
 import FirebaseAuth
+import FBSDKCoreKit
+import FBSDKLoginKit
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, FBSDKLoginButtonDelegate{
+    func loginButtonDidLogOut(_ loginButton: FBSDKLoginButton!) {
+        print("logged out")
+    }
+   
+    
+    var loginButton = FBSDKLoginButton()
     var signUpMode = true
     @IBOutlet var email: UITextField!
     @IBOutlet var driverLabel: UILabel!
@@ -19,6 +27,47 @@ class ViewController: UIViewController {
     @IBOutlet var topButton: UIButton!
     @IBOutlet var switchDriverRider: UISwitch!
     @IBOutlet var password: UITextField!
+    
+    
+    
+    func loginButton(_ loginButton: FBSDKLoginButton!, didCompleteWith result: FBSDKLoginManagerLoginResult!, error: Error!) {
+        print("weofknwewewefwefwefwfwefwefwefwefwfwefwefwefwefwef")
+        if let error = error {
+            print(error.localizedDescription)
+            return
+        } else if result.isCancelled {
+            print("user has cancelled login")
+        } else if let result = result {
+            if result.grantedPermissions.contains("email") {
+                if let graphRequest = FBSDKGraphRequest(graphPath: "me", parameters: ["fields":"email,name"]) {
+                    graphRequest.start(completionHandler: { (connection, result, error) in
+                        if error != nil {
+                            print(error?.localizedDescription)
+                            print("errooooorrr graph request")
+                        }else {
+                            if let userDeets = result {
+                                print(userDeets)
+                                let credential = FacebookAuthProvider.credential(withAccessToken: FBSDKAccessToken.current().tokenString)
+                                Auth.auth().signIn(with: credential, completion: { (user, error) in
+                                    if let error = error {
+                                        print(error.localizedDescription)
+                                    } else {
+                                        self.performSegue(withIdentifier: "riderSeguee", sender: nil)
+                                    }
+                                })
+                            }
+                        }
+                        
+                    })
+                }
+            }
+            let credential = FacebookAuthProvider.credential(withAccessToken: FBSDKAccessToken.current().tokenString)
+            Auth.auth().signIn(with: credential, completion: { (user, error) in
+                
+            })
+        }
+        }
+    
     
     func displayAlert(title:String , message:String){
          let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
@@ -105,6 +154,12 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        loginButton.center = view.center
+        loginButton.readPermissions = ["public_profile","email"]
+        loginButton.delegate = self
+        view.addSubview(loginButton)
+        
         // Do any additional setup after loading the view, typically from a nib.
     }
 
